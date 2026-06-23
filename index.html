@@ -1,13 +1,1662 @@
-Profil Madrasah Ibtidaiyah Percontohan:
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Pembuat Pemetaan CP & KBC PJOK</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
 
-Kondisi geografis : Pedesaan
-Kondisi sosial ekonomi : lingkungan masyarakat agamis, kondisi ekonomi orang tua murid menengah ke bawah
-Murid heterogen (background pendidikan awal berasal dari 50% TK, 30% RA, 20% tidak mengikuti pendidikan usia dini)
-Nilai Asesmen Nasional: nilai Literasi baik dan nilai Numerasi kurang
-Hasil Tes Kemampuan Akademik (nilai TKA), nilai Matematika 35 dari 100, Bahasa Indonesia 56 dari 100
-Kompetensi guru rata-rata sedang
-Lingkungan Belajar: cukup aman, cukup nyaman, saling menghargai
+        /* Aturan Cetak Fleksibel */
+        @media print {
+            body { 
+                background: white !important; 
+                color: black !important; 
+                font-size: 9pt; 
+            }
+            .no-print { 
+                display: none !important; 
+            }
+            .print-landscape { 
+                width: 100%; 
+                max-width: 100%; 
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .print-portrait {
+                width: 100%;
+                max-width: 100%;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            /* Sembunyikan semua kecuali modal RPPM saat sedang mencetak RPPM */
+            body.printing-rppm main,
+            body.printing-rppm header,
+            body.printing-rppm #confirmModal,
+            body.printing-rppm #editModal {
+                display: none !important;
+            }
 
-Instruksi:
+            body.printing-rppm #rppmModal {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                display: block !important;
+                background: white !important;
+            }
 
-Saya sebagai tim pengembang kurikulum madrasah akan menyusun kurikulum madrasah, buatkan analisis Kekuatan, Kelemahan, Peluang dan Tantangan, identifikasi dan rumusannya serta strategi peningkatan mutu berdasarkan data profil tersebut secara detail dan operasional, logis dan sistematis, integrasikan dengan Kurikulum Berbasis Cinta (Cinta Allah dan Rasul-Nya, Cinta Ilmu, Cinta Lingkungan, Cinta diri dan sesama, Cinta Tanah Air). Bertindaklah sebagai pengembang kurikulum madrasah profesional.
+            body.printing-rppm .rppm-modal-content {
+                box-shadow: none !important;
+                border: none !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+            }
+
+            @page { 
+                size: A4 portrait; 
+                margin: 15mm 15mm 15mm 15mm; 
+            }
+
+            body.printing-matriks @page {
+                size: A4 landscape;
+                margin: 10mm 10mm 10mm 10mm;
+            }
+            
+            table { 
+                page-break-inside: auto; 
+                width: 100% !important; 
+                border-collapse: collapse !important;
+            }
+            tr { 
+                page-break-inside: avoid; 
+                page-break-after: auto; 
+            }
+            thead {
+                display: table-header-group;
+            }
+            th {
+                background-color: #0f172a !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-bg-gray {
+                background-color: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-bg-theme {
+                background-color: #f0fdf4 !important;
+                border-left: 4px solid #16a34a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+
+    <!-- NOTIFIKASI TOAST -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
+
+    <!-- MODAL KONFIRMASI (Custom Dialog) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden no-print">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-6 m-4 transform scale-95 transition-transform duration-200" id="confirmBox">
+            <div class="flex items-center gap-3 text-amber-600 mb-4">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+                <h3 class="text-lg font-bold text-slate-800" id="confirmTitle">Konfirmasi Tindakan</h3>
+            </div>
+            <p class="text-slate-600 text-sm mb-6" id="confirmMessage">Apakah Anda yakin ingin melakukan tindakan ini?</p>
+            <div class="flex justify-end gap-3">
+                <button id="confirmCancelBtn" class="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 text-sm font-medium transition cursor-pointer">Batal</button>
+                <button id="confirmActionBtn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-medium transition cursor-pointer">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT DATA -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden no-print">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-2xl w-full p-6 m-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="text-blue-600 w-5 h-5"></i> Edit Baris Pemetaan
+                </h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editRowId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fase / Kelas</label>
+                        <input type="text" id="editFase" class="w-full border border-slate-300 rounded-lg p-2 focus:outline-blue-900 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nama Elemen</label>
+                        <input type="text" id="editElemen" class="w-full border border-slate-300 rounded-lg p-2 focus:outline-blue-900 text-sm" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tujuan Pembelajaran (TP) / CP Terpilih</label>
+                    <textarea id="editCp" rows="3" class="w-full border border-slate-300 rounded-lg p-2 focus:outline-blue-900 text-sm" required></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Materi Pembelajaran</label>
+                    <textarea id="editMateri" rows="2" class="w-full border border-slate-300 rounded-lg p-2 focus:outline-blue-900 text-sm" required></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tema KBC</label>
+                        <select id="editTemaKbc" class="w-full border border-slate-300 rounded-lg p-2 focus:outline-blue-900 bg-white text-sm">
+                            <option value="Tema 1: Cinta Allah Swt. & Rasul-Nya">Tema 1: Cinta Allah Swt. & Rasul-Nya</option>
+                            <option value="Tema 2: Cinta Ilmu">Tema 2: Cinta Ilmu</option>
+                            <option value="Tema 3: Cinta Lingkungan">Tema 3: Cinta Lingkungan</option>
+                            <option value="Tema 4: Cinta Diri & Sesama Manusia">Tema 4: Cinta Diri & Sesama Manusia</option>
+                            <option value="Tema 5: Cinta Tanah Air">Tema 5: Cinta Tanah Air</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tombol Bantu KBC</label>
+                        <button type="button" onclick="applyPresetKbc('edit')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 px-3 rounded-lg border border-slate-200 transition cursor-pointer flex items-center justify-center gap-1">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Muat Deskripsi Rekomendasi
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Keterkaitan & Integrasi Nilai KBC</label>
+                    <textarea id="editIntegrasi" rows="3" class="w-full border border-slate-300 rounded-lg p-2 focus:outline-blue-900 text-sm" required></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 text-sm font-medium transition cursor-pointer">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-sm font-medium transition cursor-pointer flex items-center gap-1.5">
+                        <i data-lucide="save" class="w-4 h-4"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL GENERATOR RPPM -->
+    <div id="rppmModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full m-4 max-h-[92vh] flex flex-col overflow-hidden rppm-modal-content">
+            <!-- Header Modal -->
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center shrink-0 no-print">
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-600 p-2 rounded-lg text-white">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold tracking-wide">RPPM Generasi Otomatis (Kurikulum Berbasis Cinta)</h3>
+                        <p class="text-xs text-slate-400">Rencana Pembelajaran Mendalam Siap Pakai & Cetak</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="printRppm()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-4 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Cetak Dokumen RPPM
+                    </button>
+                    <button onclick="closeRppmModal()" class="text-slate-400 hover:text-white p-1 transition cursor-pointer">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Konten Utama Dokumen RPPM (Printable Area) -->
+            <div class="p-8 md:p-12 overflow-y-auto flex-1 space-y-6 text-slate-800 print-portrait" id="rppmPrintArea">
+                <!-- KOP / HEADER RPPM -->
+                <div class="text-center space-y-2 border-b-4 border-slate-950 pb-4">
+                    <h2 class="text-xl font-extrabold text-slate-950 uppercase tracking-tight">RENCANA PELAKSANAAN PEMBELAJARAN MENDALAM (RPPM)</h2>
+                    <p class="text-sm font-semibold text-slate-600 tracking-wide uppercase">DENGAN PENDEKATAN ALUR AJAR KURIKULUM BERBASIS CINTA (KBC)</p>
+                    <p class="text-xs text-slate-500 italic" id="rppmKopSekolah">Satuan Pendidikan: SD Karakter Mulia</p>
+                </div>
+
+                <!-- IDENTITAS -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div class="space-y-1">
+                        <p><span class="font-bold text-slate-500 inline-block w-36">Satuan Pendidikan :</span> <span id="rppmSatuan" class="font-bold text-slate-900">SD Karakter Mulia</span></p>
+                        <p><span class="font-bold text-slate-500 inline-block w-36">Mata Pelajaran :</span> <span id="rppmMapel" class="font-semibold">Pendidikan Jasmani, Olahraga, dan Kesehatan</span></p>
+                        <p><span class="font-bold text-slate-500 inline-block w-36">Fase / Kelas :</span> <span id="rppmFase" class="font-semibold">Fase A / Kelas 1</span></p>
+                    </div>
+                    <div class="space-y-1">
+                        <p><span class="font-bold text-slate-500 inline-block w-36">Materi Pokok :</span> <span id="rppmMateri" class="font-bold text-blue-900">Gerak Dasar Berjalan</span></p>
+                        <p><span class="font-bold text-slate-500 inline-block w-36">Alokasi Waktu :</span> <span id="rppmAlokasi" class="font-semibold">2 x 35 Menit (1 Pertemuan)</span></p>
+                        <p><span class="font-bold text-slate-500 inline-block w-36">Pilar Nilai KBC :</span> <span id="rppmKbcTema" class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Tema 2: Cinta Ilmu</span></p>
+                    </div>
+                </div>
+
+                <!-- TUJUAN PEMBELAJARAN -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-extrabold uppercase text-slate-900 border-b border-slate-300 pb-1 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="target" class="w-4 h-4 text-indigo-700 shrink-0 no-print"></i> A. TUJUAN PEMBELAJARAN (TP)
+                    </h4>
+                    <p id="rppmTujuan" class="text-xs leading-relaxed font-medium pl-2">Peserta didik mampu mempraktikkan gerak dasar berjalan dengan benar.</p>
+                </div>
+
+                <!-- INDIKATOR KETERCAPAIAN -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-extrabold uppercase text-slate-900 border-b border-slate-300 pb-1 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="check-square" class="w-4 h-4 text-indigo-700 shrink-0 no-print"></i> B. INDIKATOR KETERCAPAIAN TUJUAN PEMBELAJARAN (IKTP)
+                    </h4>
+                    <ul id="rppmIktp" class="list-decimal pl-6 text-xs space-y-1 leading-relaxed">
+                        <!-- Diisi otomatis oleh script -->
+                    </ul>
+                </div>
+
+                <!-- METODE PEMBELAJARAN -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-extrabold uppercase text-slate-900 border-b border-slate-300 pb-1 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="wrench" class="w-4 h-4 text-indigo-700 shrink-0 no-print"></i> C. METODE PEMBELAJARAN REKOMENDASI
+                    </h4>
+                    <p id="rppmMetode" class="text-xs leading-relaxed font-bold text-indigo-950 pl-2">Metode Demonstrasi Terbimbing & TGfU (Teaching Games for Understanding)</p>
+                </div>
+
+                <!-- KEGIATAN PEMBELAJARAN -->
+                <div class="space-y-4">
+                    <h4 class="text-xs font-extrabold uppercase text-slate-900 border-b border-slate-300 pb-1 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="navigation" class="w-4 h-4 text-indigo-700 shrink-0 no-print"></i> D. SKENARIO ALUR AJAR BERBASIS CINTA
+                    </h4>
+                    
+                    <!-- Pendahuluan -->
+                    <div class="space-y-1.5 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                        <h5 class="text-xs font-bold text-indigo-900">1. KEGIATAN PENDAHULUAN (15 Menit)</h5>
+                        <ul id="rppmPendahuluan" class="list-disc pl-5 text-xs space-y-1 leading-relaxed">
+                            <!-- Diisi otomatis -->
+                        </ul>
+                    </div>
+
+                    <!-- Inti -->
+                    <div class="space-y-1.5 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                        <h5 class="text-xs font-bold text-indigo-900">2. KEGIATAN INTI (45 Menit)</h5>
+                        <ul id="rppmInti" class="list-disc pl-5 text-xs space-y-1 leading-relaxed">
+                            <!-- Diisi otomatis -->
+                        </ul>
+                    </div>
+
+                    <!-- Penutup -->
+                    <div class="space-y-1.5 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                        <h5 class="text-xs font-bold text-indigo-900">3. KEGIATAN PENUTUP (10 Menit)</h5>
+                        <ul id="rppmPenutup" class="list-disc pl-5 text-xs space-y-1 leading-relaxed">
+                            <!-- Diisi otomatis -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ASESMEN DAN EVALUASI -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-extrabold uppercase text-slate-900 border-b border-slate-300 pb-1 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="clipboard-list" class="w-4 h-4 text-indigo-700 shrink-0 no-print"></i> E. ASESMEN & EVALUASI
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="border border-slate-200 p-3 rounded-lg">
+                            <h5 class="text-xs font-bold text-slate-900 mb-1 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span> Formatif (Gerak / Keterampilan)
+                            </h5>
+                            <p id="rppmAsesmenFormatif" class="text-[11px] text-slate-600 leading-relaxed"></p>
+                        </div>
+                        <div class="border border-slate-200 p-3 rounded-lg">
+                            <h5 class="text-xs font-bold text-slate-900 mb-1 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Sumatif (Pengetahuan / Kognitif)
+                            </h5>
+                            <p id="rppmAsesmenSumatif" class="text-[11px] text-slate-600 leading-relaxed"></p>
+                        </div>
+                        <div class="border border-slate-200 p-3 rounded-lg">
+                            <h5 class="text-xs font-bold text-slate-900 mb-1 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span> Sikap (Afektif KBC)
+                            </h5>
+                            <p id="rppmAsesmenSikap" class="text-[11px] text-slate-600 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tanda Tangan Cetak -->
+                <div class="grid grid-cols-2 gap-4 mt-12 text-xs text-slate-800 pt-6">
+                    <div class="space-y-16 text-center">
+                        <div>
+                            <p>Mengetahui,</p>
+                            <p class="font-bold">Kepala Sekolah</p>
+                        </div>
+                        <div>
+                            <p class="font-bold underline" id="rppmPrintHeadmaster">Dra. Sri Mulyani, M.Pd.</p>
+                            <p class="text-slate-500">NIP. -------------------------</p>
+                        </div>
+                    </div>
+                    <div class="space-y-16 text-center">
+                        <div>
+                            <p>Bandung, 23 Juni 2026</p>
+                            <p class="font-bold">Guru Mata Pelajaran</p>
+                        </div>
+                        <div>
+                            <p class="font-bold underline" id="rppmPrintTeacher">Ahmad Wijaya, S.Pd.</p>
+                            <p class="text-slate-500">NIP. -------------------------</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN INTERFACE -->
+    <main class="container mx-auto p-4 md:p-6 space-y-6 max-w-[1500px]">
+        
+        <!-- BAGIAN INFO SEKOLAH (no-print) -->
+        <section class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80 no-print">
+            <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+                <i data-lucide="school" class="text-blue-700 w-5 h-5"></i>
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">1. Informasi Administrasi Cetak & KOP Dokumen</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Satuan Pendidikan</label>
+                    <input type="text" id="schoolName" value="SD Karakter Mulia" oninput="updateHeader()" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-900 focus:outline-hidden">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Mata Pelajaran</label>
+                    <input type="text" id="subjectName" value="Pendidikan Jasmani, Olahraga, dan Kesehatan" oninput="updateHeader()" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-900 focus:outline-hidden">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Fase & Kelas Dokumen</label>
+                    <input type="text" id="faseHeader" value="Fase A / Kelas 1" oninput="updateHeader()" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-900 focus:outline-hidden">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Tahun Ajaran</label>
+                    <input type="text" id="schoolYear" value="2026/2027" oninput="updateHeader()" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-900 focus:outline-hidden">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Guru Pengampu</label>
+                    <input type="text" id="teacherName" value="Ahmad Wijaya, S.Pd." oninput="updateHeader()" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-900 focus:outline-hidden">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Kepala Sekolah</label>
+                    <input type="text" id="headmasterName" value="Dra. Sri Mulyani, M.Pd." oninput="updateHeader()" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-blue-900 focus:outline-hidden">
+                </div>
+            </div>
+        </section>
+
+        <!-- GRID UTAMA FORMULIR INPUT & FILTER DATABASE -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 no-print">
+            
+            <!-- PANEL KIRI: PENGE-SET OTOMATIS DARI DATABASE -->
+            <div class="lg:col-span-4 bg-gradient-to-b from-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-md border border-slate-800 space-y-4">
+                <div class="flex items-center gap-2 border-b border-indigo-900/60 pb-3">
+                    <i data-lucide="database" class="text-blue-400 w-5 h-5"></i>
+                    <h2 class="text-sm font-bold uppercase tracking-wider">2. Mesin Auto-Fill Database PJOK</h2>
+                </div>
+                <p class="text-xs text-indigo-200">Gunakan fitur ini untuk langsung memuat data resmi kurikulum PJOK terbaru tanpa perlu mengetik secara manual.</p>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-indigo-300 mb-1">Pilih Tingkat Kelas</label>
+                        <select id="dbKelasSelect" onchange="onDbSelectionChange()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-blue-400">
+                            <option value="Kelas 1">Kelas 1 (Fase A)</option>
+                            <option value="Kelas 2">Kelas 2 (Fase A)</option>
+                            <option value="Kelas 3">Kelas 3 (Fase B)</option>
+                            <option value="Kelas 4">Kelas 4 (Fase B)</option>
+                            <option value="Kelas 5">Kelas 5 (Fase C)</option>
+                            <option value="Kelas 6">Kelas 6 (Fase C)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-indigo-300 mb-1">Pilih Elemen Kurikulum</label>
+                        <select id="dbElemenSelect" onchange="onDbSelectionChange()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-blue-400">
+                            <option value="Terampil Bergerak">Terampil Bergerak</option>
+                            <option value="Belajar Melalui Gerak">Belajar Melalui Gerak</option>
+                            <option value="Bergaya Hidup Aktif">Bergaya Hidup Aktif</option>
+                            <option value="Memilih Hidup yang Menyehatkan">Memilih Hidup yang Menyehatkan</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-indigo-900/40 p-3 rounded-xl border border-indigo-800/50 space-y-2">
+                        <span class="text-[10px] bg-blue-500/30 text-blue-300 px-2 py-0.5 rounded-full font-bold uppercase">Ringkasan Materi Terkait:</span>
+                        <p id="dbMateriPreview" class="text-xs text-indigo-100 leading-relaxed italic">Memuat materi pokok...</p>
+                    </div>
+
+                    <div class="border-t border-indigo-900/60 pt-3">
+                        <label class="block text-xs font-semibold text-indigo-300 mb-1">Pilih Tujuan Pembelajaran (TP):</label>
+                        <select id="dbTpSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-blue-400">
+                            <!-- Diisi otomatis oleh javascript -->
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button type="button" onclick="loadSingleSelectedTp()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Muat Ke Formulir
+                        </button>
+                        <button type="button" onclick="addAllTpsFromElement()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
+                            <i data-lucide="chevrons-right" class="w-4 h-4"></i> Muat Semua TP (Bulk)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL KANAN: FORMULIR ENTRI & EDIT KONTEN -->
+            <div class="lg:col-span-8 bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+                    <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="text-blue-900 w-5 h-5"></i> 3. Formulir Modifikasi Data Pemetaan
+                    </h2>
+                    <span class="text-[10px] bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full font-bold">Mode Edit Fleksibel</span>
+                </div>
+                
+                <form id="cpForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:col-span-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fase & Kelas</label>
+                            <input type="text" id="faseInput" value="Fase A / Kelas 1" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 focus:ring-1 focus:ring-blue-900 focus:outline-hidden text-xs" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nama Elemen</label>
+                            <input type="text" id="elemenInput" placeholder="Contoh: Terampil Bergerak" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-900 focus:outline-hidden text-xs" required>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tujuan Pembelajaran (TP) / Rumusan CP</label>
+                        <textarea id="cpInput" rows="2" placeholder="Tuliskan rumusan kompetensi tujuan pembelajaran di sini..." class="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-900 focus:outline-hidden text-xs" required></textarea>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Materi Pokok Pembelajaran</label>
+                        <textarea id="materiInput" rows="2" placeholder="Materi detail pembelajaran..." class="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-900 focus:outline-hidden text-xs" required></textarea>
+                    </div>
+
+                    <div class="md:col-span-1 space-y-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Pilih Tema KBC</label>
+                            <select id="temaKbcSelect" onchange="onKbcThemeChange()" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-900 focus:outline-hidden bg-white text-xs">
+                                <option value="Tema 1: Cinta Allah Swt. & Rasul-Nya">Tema 1: Cinta Allah Swt. & Rasul-Nya</option>
+                                <option value="Tema 2: Cinta Ilmu">Tema 2: Cinta Ilmu</option>
+                                <option value="Tema 3: Cinta Lingkungan">Tema 3: Cinta Lingkungan</option>
+                                <option value="Tema 4: Cinta Diri & Sesama Manusia">Tema 4: Cinta Diri & Sesama Manusia</option>
+                                <option value="Tema 5: Cinta Tanah Air">Tema 5: Cinta Tanah Air</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="applyPresetKbc('input')" class="w-full bg-blue-50 text-blue-700 text-xs font-semibold py-1.5 px-3 rounded-lg border border-blue-100 hover:bg-blue-100 transition cursor-pointer flex items-center justify-center gap-1">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Muat KBC Otomatis
+                        </button>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Keterkaitan & Integrasi Nilai Cinta (KBC)</label>
+                        <textarea id="integrasiInput" rows="3" placeholder="Tuliskan keterkaitan afektif dengan pilar cinta KBC..." class="w-full border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-900 focus:outline-hidden text-xs" required></textarea>
+                    </div>
+
+                    <div class="md:col-span-3 flex justify-end gap-3 pt-3 border-t border-slate-100">
+                        <button type="submit" class="bg-blue-950 hover:bg-blue-900 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition cursor-pointer flex items-center gap-2 text-xs">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Tambahkan Ke Matriks
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- AREA PRATINJAU & CETAK -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-xs border border-slate-200 print-landscape">
+            
+            <!-- Aksi Pratinjau (no-print) -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-5 mb-6 no-print">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="eye" class="text-blue-950 w-5 h-5"></i> 4. Pratinjau Matriks Dokumen Hasil Pemetaan
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">Gunakan tombol cetak atau ekspor data di sebelah kanan setelah pemetaan selesai.</p>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                    <button onclick="openClearConfirmation()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Kosongkan
+                    </button>
+                    <button onclick="exportJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                        <i data-lucide="download" class="w-4 h-4"></i> Cadangkan (JSON)
+                    </button>
+                    <button onclick="triggerImport()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                        <i data-lucide="upload" class="w-4 h-4"></i> Muat Proyek
+                    </button>
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importJSON(event)">
+                    <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel (CSV)
+                    </button>
+                    <button onclick="printMatriks()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2 rounded-xl shadow-sm transition cursor-pointer flex items-center gap-1.5">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Cetak / Simpan PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bagian KOP Cetak / Administrasi (Muncul Selalu) -->
+            <div class="mb-6 border-b-4 border-blue-950 pb-4">
+                <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+                    <div class="space-y-1">
+                        <h2 class="text-lg md:text-xl font-extrabold text-blue-950 uppercase tracking-tight leading-tight">Matriks Pemetaan Capaian Pembelajaran (CP) & Kurikulum Berbasis Cinta (KBC) PJOK</h2>
+                        <p class="text-xs text-slate-600 font-medium">Dokumen Lampiran Kurikulum Operasional Satuan Pendidikan (KOSP)</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 mt-4 pt-4 border-t border-slate-200/60 text-xs text-slate-700">
+                    <div>
+                        <span class="font-semibold text-slate-400">Satuan Pendidikan:</span>
+                        <p class="font-bold text-slate-900" id="printSchool">SD Karakter Mulia</p>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-slate-400">Mata Pelajaran:</span>
+                        <p class="font-bold text-slate-900" id="printSubject">Pendidikan Jasmani, Olahraga, dan Kesehatan</p>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-slate-400">Fase / Kelas:</span>
+                        <p class="font-bold text-slate-900" id="printFase">Fase A / Kelas 1</p>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-slate-400">Tahun Pelajaran:</span>
+                        <p class="font-bold text-slate-900" id="printYear">2026/2027</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Utama Hasil Pemetaan -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-xs">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-blue-950 text-white text-[10px] sm:text-xs uppercase tracking-wider">
+                            <th class="border border-slate-200 p-3 text-center w-[12%]">Fase & Kelas</th>
+                            <th class="border border-slate-200 p-3 w-[15%]">Elemen</th>
+                            <th class="border border-slate-200 p-3 w-[28%]">Tujuan Pembelajaran (TP) / Indikator CP</th>
+                            <th class="border border-slate-200 p-3 w-[17%]">Materi Pokok</th>
+                            <th class="border border-slate-200 p-3 w-[22%]">Tema KBC & Integrasi Cinta</th>
+                            <th class="border border-slate-200 p-3 text-center w-[10%] no-print">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matriksBody">
+                        <!-- Data dimasukkan secara dinamis melalui JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Sesi Tanda Tangan (Khusus Cetak) -->
+            <div class="hidden print:grid grid-cols-2 gap-4 mt-12 text-xs text-slate-800 pt-6 col-span-full">
+                <div class="space-y-16 text-center">
+                    <div>
+                        <p>Mengetahui,</p>
+                        <p class="font-bold">Kepala Sekolah</p>
+                    </div>
+                    <div>
+                        <p class="font-bold underline" id="printHeadmaster">Dra. Sri Mulyani, M.Pd.</p>
+                        <p class="text-slate-500">NIP. -------------------------</p>
+                    </div>
+                </div>
+                <div class="space-y-16 text-center">
+                    <div>
+                        <p>Bandung, 23 Juni 2026</p>
+                        <p class="font-bold">Guru Mata Pelajaran</p>
+                    </div>
+                    <div>
+                        <p class="font-bold underline" id="printTeacher">Ahmad Wijaya, S.Pd.</p>
+                        <p class="text-slate-500">NIP. -------------------------</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- LOGIC JAVASCRIPT & DATABASE INTERNAL -->
+    <script>
+        // DATABASE LURING TERPADU PJOK
+        const PJOK_DATABASE = {
+            "Kelas 1": {
+                fase: "Fase A",
+                elemen: {
+                    "Terampil Bergerak": {
+                        cp: "Mengenal dan mempraktikkan gerak dasar lokomotor, nonlokomotor, dan manipulatif melalui permainan sederhana.",
+                        materi: "Gerak berjalan, berlari, melompat, meloncat, menekuk, memutar, melempar, menangkap, menendang.",
+                        tps: [
+                            "Mampu mempraktikkan gerak berjalan maju dengan benar (Pertemuan 1)",
+                            "Mampu mempraktikkan gerak berjalan ke berbagai arah (Pertemuan 2)",
+                            "Mampu mempraktikkan gerak berlari dengan koordinasi yang baik (Pertemuan 3)",
+                            "Mampu mempraktikkan variasi gerak berlari melalui permainan sederhana (Pertemuan 4)",
+                            "Mampu melakukan gerak melompat dengan satu kaki (Pertemuan 5)",
+                            "Mampu melakukan gerak melompat dengan dua kaki (Pertemuan 6)",
+                            "Mampu melakukan gerak meloncat melewati rintangan sederhana (Pertemuan 7)",
+                            "Mampu mengombinasikan gerak lokomotor dalam permainan sederhana (Pertemuan 8)",
+                            "Mampu melakukan gerak menekuk anggota tubuh dengan benar (Pertemuan 9)",
+                            "Mampu melakukan gerak memutar badan dan lengan dengan benar (Pertemuan 10)",
+                            "Mampu mengombinasikan gerak menekuk and memutar (Pertemuan 11)",
+                            "Mampu melempar bola ke sasaran dengan tepat (Pertemuan 12)",
+                            "Mampu menangkap bola dengan teknik sederhana (Pertemuan 13)",
+                            "Mampu melakukan gerak melempar dan menangkap secara berpasangan (Pertemuan 14)",
+                            "Mampu menendang bola ke sasaran dengan benar (Pertemuan 15)",
+                            "Mampu mengombinasikan gerak melempar, menangkap, dan menendang dalam permainan (Pertemuan 16)",
+                            "Mampu menerapkan berbagai gerak dasar dalam permainan sederhana (Pertemuan 17)",
+                            "Mampu menunjukkan penguasaan gerak dasar yang telah dipelajari (Pertemuan 18)"
+                        ]
+                    },
+                    "Belajar Melalui Gerak": {
+                        cp: "Mengenal aturan sederhana permainan dan menunjukkan sikap disiplin, jujur, dan mau bekerja sama.",
+                        materi: "Aturan permainan sederhana, antre, kerja sama, sportivitas.",
+                        tps: [
+                            "Mampu mengenali aturan permainan sederhana (Pertemuan 19)",
+                            "Mampu mengikuti aturan permainan dengan disiplin (Pertemuan 20)",
+                            "Mampu menunjukkan perilaku antre saat bermain (Pertemuan 21)",
+                            "Mampu bekerja sama dalam aktivitas kelompok kecil (Pertemuan 22)",
+                            "Mampu menyelesaikan permainan melalui kerja sama tim (Pertemuan 23)",
+                            "Mampu menunjukkan sikap jujur dalam permainan (Pertemuan 24)",
+                            "Mampu menunjukkan sikap menghargai teman saat bermain (Pertemuan 25)",
+                            "Mampu menerapkan disiplin, kerja sama, dan sportivitas dalam permainan (Pertemuan 26)"
+                        ]
+                    },
+                    "Bergaya Hidup Aktif": {
+                        cp: "Mengikuti berbagai aktivitas gerak dengan antusias dan mengenali manfaat bergerak bagi tubuh.",
+                        materi: "Aktivitas bermain aktif, senam ceria, permainan gerak.",
+                        tps: [
+                            "Mampu mengikuti aktivitas bermain aktif dengan antusias (Pertemuan 27)",
+                            "Mampu menjelaskan manfaat bermain aktif bagi tubuh (Pertemuan 28)",
+                            "Mampu melakukan gerakan senam ceria dengan benar (Pertemuan 29)",
+                            "Mampu mengikuti rangkaian senam ceria secara mandiri (Pertemuan 30)",
+                            "Mampu berpartisipasi aktif dalam permainan gerak (Pertemuan 31)",
+                            "Mampu menunjukkan pentingnya aktivitas fisik bagi kesehatan (Pertemuan 32)"
+                        ]
+                    },
+                    "Memilih Hidup yang Menyehatkan": {
+                        cp: "Mengenal kebiasaan hidup bersih dan sehat, makanan sehat, serta pentingnya menjaga kebersihan diri.",
+                        materi: "Cuci tangan, kebersihan tubuh, makanan sehat, keselamatan bermain.",
+                        tps: [
+                            "Mampu mempraktikkan cara mencuci tangan yang benar (Pertemuan 33)",
+                            "Mampu menjelaskan pentingnya menjaga kebersihan tubuh (Pertemuan 34)",
+                            "Mampu mengenali makanan sehat dan bergizi sederhana (Pertemuan 35)",
+                            "Mampu menerapkan aturan keselamatan saat bermain dan berolahraga (Pertemuan 36)"
+                        ]
+                    }
+                }
+            },
+            "Kelas 2": {
+                fase: "Fase A",
+                elemen: {
+                    "Terampil Bergerak": {
+                        cp: "Menerapkan kombinasi gerak lokomotor, nonlokomotor, dan manipulatif dalam berbagai permainan dan aktivitas fisik sederhana.",
+                        materi: "Kombinasi gerak dasar, permainan bola sederhana, senam dasar, gerak berirama sederhana.",
+                        tps: [
+                            "Mampu mengombinasikan gerak berjalan dan berlari dalam aktivitas permainan sederhana (Pertemuan 1)",
+                            "Mampu mengombinasikan gerak berlari dan melompat dengan koordinasi yang baik (Pertemuan 2)",
+                            "Mampu mengombinasikan gerak berjalan, berlari, dan melompat dalam lintasan sederhana (Pertemuan 3)",
+                            "Mampu mengombinasikan gerak menekuk, memutar, dan mengayun dengan benar (Pertemuan 4)",
+                            "Mampu mengombinasikan gerak melempar dan menangkap bola secara berpasangan (Pertemuan 5)",
+                            "Mampu mengombinasikan gerak menendang dan menghentikan bola dengan tepat (Pertemuan 6)",
+                            "Mampu mengombinasikan gerak lokomotor dan manipulatif dalam aktivitas sederhana (Pertemuan 7)",
+                            "Mampu menerapkan kombinasi gerak dasar dalam permainan sederhana (Pertemuan 8)",
+                            "Mampu melakukan lempar tangkap bola dalam permainan kelompok kecil (Pertemuan 9)",
+                            "Mampu melakukan permainan menendang bola ke sasaran (Pertemuan 10)",
+                            "Mampu menerapkan teknik dasar menggiring bola sederhana (Pertemuan 11)",
+                            "Mampu berpartisipasi dalam permainan bola sederhana dengan aturan dasar (Pertemuan 12)",
+                            "Mampu melakukan sikap awal dan akhir dalam senam dasar (Pertemuan 13)",
+                            "Mampu melakukan gerak keseimbangan sederhana (Pertemuan 14)",
+                            "Mampu melakukan gerak kelenturan sederhana (Pertemuan 15)",
+                            "Mampu mengombinasikan gerak keseimbangan dan kelenturan (Pertemuan 16)",
+                            "Mampu mengikuti gerakan berirama sesuai ketukan (Pertemuan 17)",
+                            "Mampu menampilkan rangkaian gerak berirama sederhana (Pertemuan 18)"
+                        ]
+                    },
+                    "Belajar Melalui Gerak": {
+                        cp: "Menerapkan aturan permainan, menunjukkan sportivitas, serta bekerja sama dalam kelompok kecil.",
+                        materi: "Kerja sama tim, kepatuhan aturan permainan, sportivitas dalam kompetisi sederhana.",
+                        tps: [
+                            "Mampu bekerja sama dalam permainan kelompok kecil (Pertemuan 19)",
+                            "Mampu berpartisipasi aktif dalam tugas kelompok (Pertemuan 20)",
+                            "Mampu mengikuti aturan permainan dengan disiplin (Pertemuan 21)",
+                            "Mampu menunjukkan tanggung jawab dalam permainan (Pertemuan 22)",
+                            "Mampu menunjukkan sikap sportivitas dan menghargai kemampuan teman (Pertemuan 23)",
+                            "Mampu menerima hasil kemenangan atau kekalahan dengan lapang dada (Pertemuan 24)"
+                        ]
+                    },
+                    "Bergaya Hidup Aktif": {
+                        cp: "Berpartisipasi aktif dalam aktivitas kebugaran sederhana dan menjelaskan manfaat aktivitas fisik bagi kesehatan.",
+                        materi: "Kebugaran jasmani sederhana, aktivitas fisik harian, permainan aktif.",
+                        tps: [
+                            "Mampu melakukan latihan kebugaran jasmani dasar (Pertemuan 25)",
+                            "Mampu menceritakan manfaat aktivitas olahraga harian bagi stamina tubuh (Pertemuan 26)",
+                            "Mampu berpartisipasi dalam permainan harian secara lincah (Pertemuan 27)",
+                            "Mampu membiasakan diri aktif bergerak minimal 30 menit sehari (Pertemuan 28)"
+                        ]
+                    },
+                    "Memilih Hidup yang Menyehatkan": {
+                        cp: "Menerapkan kebiasaan hidup sehat, memilih makanan bergizi sederhana, dan mengenali cara menjaga keselamatan diri saat beraktivitas.",
+                        materi: "Gizi seimbang, pola hidup sehat, pencegahan jenis cedera sederhana, keselamatan berolahraga.",
+                        tps: [
+                            "Mampu membedakan makanan bergizi tinggi dan makanan rendah gizi (Pertemuan 29)",
+                            "Mampu menceritakan kebiasaan mandi dan gosok gigi teratur (Pertemuan 30)",
+                            "Mampu melakukan langkah pertolongan pertama sederhana (Pertemuan 31)",
+                            "Mampu menjaga keselamatan diri selama aktivitas fisik berlangsung (Pertemuan 32)"
+                        ]
+                    }
+                }
+            },
+            "Kelas 3": {
+                fase: "Fase B",
+                elemen: {
+                    "Terampil Bergerak": {
+                        cp: "Mempraktikkan gerak dasar lokomotor, nonlokomotor, dan manipulatif secara lebih terkoordinasi dalam berbagai aktivitas fisik.",
+                        materi: "Variasi gerak lokomotor, nonlokomotor, manipulatif; permainan bola sederhana; senam dasar; gerak berirama.",
+                        tps: [
+                            "Mampu mempraktikkan variasi gerak berjalan dalam berbagai arah dengan benar (Pertemuan 1)",
+                            "Mampu mempraktikkan variasi gerak berlari melalui permainan sederhana (Pertemuan 2)",
+                            "Mampu mempraktikkan variasi gerak melompat dan meloncat dengan koordinasi yang baik (Pertemuan 3)",
+                            "Mampu mengombinasikan gerak lokomotor dalam aktivitas fisik sederhana (Pertemuan 4)",
+                            "Mampu mempraktikkan gerak menekuk, memutar, dan mengayun dengan benar (Pertemuan 5)",
+                            "Mampu mengombinasikan berbagai gerak nonlokomotor dalam aktivitas sederhana (Pertemuan 6)",
+                            "Mampu melakukan gerak melempar dan menangkap bola dengan tepat (Pertemuan 7)",
+                            "Mampu melakukan gerak menendang dan menggiring bola sederhana (Pertemuan 8)",
+                            "Mampu mengombinasikan gerak manipulatif dalam permainan sederhana (Pertemuan 9)",
+                            "Mampu melakukan teknik dasar lempar tangkap dalam permainan bola sederhana (Pertemuan 10)",
+                            "Mampu menerapkan teknik dasar menendang dan menggiring bola (Pertemuan 11)",
+                            "Mampu berpartisipasi dalam permainan bola sederhana sesuai aturan (Pertemuan 12)",
+                            "Mampu menerapkan kombinasi gerak dalam permainan bola sederhana (Pertemuan 13)",
+                            "Mampu melakukan sikap dasar dalam senam dengan benar (Pertemuan 14)",
+                            "Mampu melakukan latihan keseimbangan sederhana (Pertemuan 15)",
+                            "Mampu melakukan latihan kelenturan sederhana (Pertemuan 16)",
+                            "Mampu mengombinasikan gerakan senam dasar dalam rangkaian sederhana (Pertemuan 17)",
+                            "Mampu mengikuti gerak berirama sesuai ketukan musik (Pertemuan 18)",
+                            "Mampu menampilkan rangkaian gerak berirama sederhana secara percaya diri (Pertemuan 19)"
+                        ]
+                    },
+                    "Belajar Melalui Gerak": {
+                        cp: "Menerapkan aturan permainan sederhana, bekerja sama dalam kelompok, dan menunjukkan perilaku sportif.",
+                        materi: "Kerja sama kelompok, aturan permainan, sportivitas, tanggung jawab dalam permainan.",
+                        tps: [
+                            "Mampu bekerja sama dalam aktivitas kelompok kecil (Pertemuan 20)",
+                            "Mampu berkontribusi aktif dalam menyelesaikan tugas kelompok (Pertemuan 21)",
+                            "Mampu memahami dan mengikuti aturan permainan sederhana (Pertemuan 22)",
+                            "Mampu menunjukkan disiplin dalam menjalankan aturan permainan (Pertemuan 23)",
+                            "Mampu menunjukkan sikap sportif dalam permainan (Pertemuan 24)",
+                            "Mampu menghargai teman dan lawan dalam aktivitas permainan (Pertemuan 25)",
+                            "Mampu menunjukkan tanggung jawab terhadap peran yang diberikan dalam permainan (Pertemuan 26)",
+                            "Mampu menerapkan kerja sama, disiplin, dan tanggung jawab dalam permainan kelompok (Pertemuan 27)"
+                        ]
+                    },
+                    "Bergaya Hidup Aktif": {
+                        cp: "Mengikuti berbagai aktivitas fisik dan mengenali manfaat aktivitas fisik bagi kesehatan.",
+                        materi: "Aktivitas kebugaran sederhana, permainan aktif, manfaat olahraga bagi kesehatan.",
+                        tps: [
+                            "Mampu melakukan aktivitas kebugaran sederhana untuk meningkatkan kesehatan tubuh (Pertemuan 28)",
+                            "Mampu menjelaskan manfaat aktivitas kebugaran bagi kesehatan (Pertemuan 29)",
+                            "Mampu berpartisipasi aktif dalam berbagai permainan yang melibatkan aktivitas fisik (Pertemuan 30)",
+                            "Mampu menunjukkan semangat dan ketekunan dalam aktivitas fisik (Pertemuan 31)",
+                            "Mampu menjelaskan manfaat olahraga terhadap kebugaran dan kesehatan tubuh (Pertemuan 32)"
+                        ]
+                    },
+                    "Memilih Hidup yang Menyehatkan": {
+                        cp: "Mengenal makanan bergizi, kebiasaan hidup sehat, and risiko sederhana yang dapat mengganggu kesehatan.",
+                        materi: "Makanan sehat, kebersihan diri dan lingkungan, keselamatan saat bermain dan berolahraga.",
+                        tps: [
+                            "Mampu mengidentifikasi jenis makanan sehat dan bergizi (Pertemuan 33)",
+                            "Mampu menerapkan kebiasaan menjaga kebersihan diri dan lingkungan sekolah (Pertemuan 34)",
+                            "Mampu mengenali dan menerapkan aturan keselamatan saat bermain (Pertemuan 35)",
+                            "Mampu menerapkan prosedur keselamatan dalam aktivitas olahraga sederhana (Pertemuan 36)"
+                        ]
+                    }
+                }
+            },
+            "Kelas 4": {
+                fase: "Fase B",
+                elemen: {
+                    "Terampil Bergerak": {
+                        cp: "Mengombinasikan dan menerapkan berbagai gerak dasar dalam permainan, olahraga, senam, dan aktivitas kebugaran sederhana.",
+                        materi: "Kombinasi gerak dasar dalam permainan bola besar, bola kecil, atletik dasar, senam lantai sederhana, dan aktivitas air.",
+                        tps: [
+                            "Mampu mempraktikkan teknik dasar melempar dan menangkap bola dengan benar (Pertemuan 1)",
+                            "Mampu mempraktikkan teknik dasar menggiring bola dalam permainan sederhana (Pertemuan 2)",
+                            "Mampu mempraktikkan teknik dasar menendang dan mengoper bola (Pertemuan 3)",
+                            "Mampu menerapkan kombinasi teknik dasar dalam permainan bola besar sederhana (Pertemuan 4)",
+                            "Mampu bermain bola besar sederhana dengan mematuhi aturan permainan (Pertemuan 5)",
+                            "Mampu mempraktikkan teknik melempar bola kecil dengan tepat (Pertemuan 6)",
+                            "Mampu mempraktikkan teknik menangkap bola kecil dengan baik (Pertemuan 7)",
+                            "Mampu mempraktikkan teknik memukul bola menggunakan alat sederhana (Pertemuan 8)",
+                            "Mampu menerapkan kombinasi teknik dasar dalam permainan bola kecil (Pertemuan 9)",
+                            "Mampu berpartisipasi dalam permainan bola kecil sederhana (Pertemuan 10)",
+                            "Mampu mempraktikkan teknik jalan cepat dengan benar (Pertemuan 11)",
+                            "Mampu mempraktikkan teknik lari jarak pendek sederhana (Pertemuan 12)",
+                            "Mampu mempraktikkan teknik lompat jauh sederhana (Pertemuan 13)",
+                            "Mampu mempraktikkan teknik lempar sasaran sederhana (Pertemuan 14)",
+                            "Mampu mengombinasikan keterampilan atletik dasar dalam permainan (Pertemuan 15)",
+                            "Mampu melakukan sikap lilin dengan bantuan guru (Pertemuan 16)",
+                            "Mampu melakukan guling depan sederhana (Pertemuan 17)",
+                            "Mampu melakukan gerak keseimbangan dalam senam lantai (Pertemuan 18)",
+                            "Mampu mengombinasikan gerak senam lantai sederhana dalam rangkaian gerak (Pertemuan 19)",
+                            "Mampu mengenali manfaat dan aturan keselamatan aktivitas air (Pertemuan 20)",
+                            "Mampu mempraktikkan gerakan dasar di air sesuai fasilitas yang tersedia (Pertemuan 21)"
+                        ]
+                    },
+                    "Belajar Melalui Gerak": {
+                        cp: "Menggunakan strategi permainan sederhana, memecahkan masalah gerak, dan berkontribusi aktif dalam keberhasilan tim.",
+                        materi: "Strategi permainan sederhana, pemecahan masalah gerak, kepemimpinan dan kerja sama tim.",
+                        tps: [
+                            "Mampu memahami strategi sederhana dalam permainan beregu (Pertemuan 22)",
+                            "Mampu menerapkan strategi sederhana untuk mencapai tujuan permainan (Pertemuan 23)",
+                            "Mampu menemukan solusi terhadap masalah gerak dalam permainan (Pertemuan 24)",
+                            "Mampu memilih gerakan yang tepat sesuai situasi permainan (Pertemuan 25)",
+                            "Mampu menunjukkan sikap kepemimpinan dalam aktivitas kelompok (Pertemuan 26)",
+                            "Mampu bekerja sama secara efektif dalam permainan beregu (Pertemuan 27)",
+                            "Mampu menunjukkan tanggung jawab terhadap tugas dalam tim (Pertemuan 28)"
+                        ]
+                    },
+                    "Bergaya Hidup Aktif": {
+                        cp: "Berpartisipasi aktif dalam aktivitas kebugaran serta menjelaskan faktor yang membuat aktivitas fisik menjadi menyenangkan.",
+                        materi: "Latihan kebugaran jasmani sederhana, aktivitas fisik teratur, manfaat olahraga bagi kesehatan jangka panjang.",
+                        tps: [
+                            "Mampu melakukan latihan kekuatan dan daya tahan sederhana (Pertemuan 29)",
+                            "Mampu mengukur hasil latihan kebugaran secara sederhana (Pertemuan 30)",
+                            "Mampu menjelaskan pentingnya aktivitas fisik secara teratur (Pertemuan 31)",
+                            "Mampu membiasakan aktivitas fisik dalam kehidupan sehari-hari (Pertemuan 32)",
+                            "Mampu menjelaskan hubungan olahraga dengan kesehatan jangka panjang (Pertemuan 33)"
+                        ]
+                    },
+                    "Memilih Hidup yang Menyehatkan": {
+                        cp: "Menerapkan pola hidup sehat, memilih makanan bergizi seimbang, dan mempraktikkan penanganan cedera ringan.",
+                        materi: "Gizi seimbang, pencegahan penyakit, pertolongan pertama pada cedera ringan, keselamatan aktivitas jasmani.",
+                        tps: [
+                            "Mampu mengidentifikasi kebutuhan gizi seimbang bagi tubuh (Pertemuan 34)",
+                            "Mampu menerapkan cara pencegahan penyakit dan pertolongan pertama sederhana pada cedera ringan (Pertemuan 35)",
+                            "Mampu menerapkan prosedur keselamatan dalam berbagai aktivitas jasmani (Pertemuan 36)"
+                        ]
+                    }
+                }
+            },
+            "Kelas 5": {
+                fase: "Fase C",
+                elemen: {
+                    "Terampil Bergerak": {
+                        cp: "Mempraktikkan dan mengombinasikan keterampilan gerak dalam berbagai permainan, olahraga, senam, dan aktivitas kebugaran dengan teknik yang benar.",
+                        materi: "Permainan bola besar, bola kecil, atletik, senam lantai, senam irama, aktivitas kebugaran jasmani.",
+                        tps: [
+                            "Mampu mempraktikkan teknik dasar passing dalam permainan bola besar (Pertemuan 1)",
+                            "Mampu mempraktikkan teknik dasar menangkap dan melempar bola dengan benar (Pertemuan 2)",
+                            "Mampu mempraktikkan teknik dasar menggiring bola dalam permainan sederhana (Pertemuan 3)",
+                            "Mampu menerapkan kombinasi teknik dasar dalam permainan bola besar sederhana (Pertemuan 4)",
+                            "Mampu bermain dengan menerapkan aturan dan strategi sederhana (Pertemuan 5)",
+                            "Mampu mempraktikkan teknik dasar melempar dan menangkap bola kecil (Pertemuan 6)",
+                            "Mampu mempraktikkan teknik dasar memukul bola menggunakan alat (Pertemuan 7)",
+                            "Mampu menerapkan kombinasi teknik dasar dalam permainan bola kecil (Pertemuan 8)",
+                            "Mampu bermain bola kecil sederhana dengan sportif (Pertemuan 9)",
+                            "Mampu mempraktikkan teknik jalan cepat dengan benar (Pertemuan 10)",
+                            "Mampu mempraktikkan teknik lari jarak pendek dengan benar (Pertemuan 11)",
+                            "Mampu mempraktikkan teknik lompat jauh sederhana (Pertemuan 12)",
+                            "Mampu mempraktikkan teknik lempar sasaran secara tepat (Pertemuan 13)",
+                            "Mampu mengombinasikan berbagai keterampilan atletik dalam permainan (Pertemuan 14)",
+                            "Mampu melakukan guling depan dengan teknik yang benar (Pertemuan 15)",
+                            "Mampu melakukan sikap lilin dengan aman (Pertemuan 16)",
+                            "Mampu melakukan rangkaian gerak senam lantai sederhana (Pertemuan 17)",
+                            "Mampu mengikuti gerakan senam irama sesuai ketukan musik (Pertemuan 18)",
+                            "Mampu menampilkan rangkaian gerak senam irama sederhana (Pertemuan 19)",
+                            "Mampu melakukan latihan daya tahan dan kekuatan sederhana (Pertemuan 20)",
+                            "Mampu melakukan rangkaian aktivitas kebugaran jasmani secara mandiri (Pertemuan 21)"
+                        ]
+                    },
+                    "Belajar Melalui Gerak": {
+                        cp: "Menggunakan strategi sederhana dalam permainan, menunjukkan sportivitas, dan melaksanakan peran dalam kelompok.",
+                        materi: "Strategi permainan sederhana, kerja sama tim, sportivitas, tanggung jawab dalam kelompok.",
+                        tps: [
+                            "Mampu memahami strategi sederhana dalam permainan beregu (Pertemuan 22)",
+                            "Mampu menerapkan strategi sederhana dalam permainan (Pertemuan 23)",
+                            "Mampu bekerja sama secara efektif dalam kelompok (Pertemuan 24)",
+                            "Mampu berkontribusi aktif dalam mencapai tujuan kelompok (Pertemuan 25)",
+                            "Mampu menunjukkan sikap sportif dalam permainan dan perlombaan (Pertemuan 26)",
+                            "Mampu menghargai keberhasilan dan kekurangan teman (Pertemuan 27)",
+                            "Mampu melaksanakan tugas yang diberikan dalam kelompok dengan penuh tanggung jawab (Pertemuan 28)"
+                        ]
+                    },
+                    "Bergaya Hidup Aktif": {
+                        cp: "Mengikuti aktivitas kebugaran jasmani dan menjelaskan manfaatnya bagi kesehatan tubuh.",
+                        materi: "Komponen kebugaran jasmani, aktivitas fisik teratur, pengukuran kebugaran sederhana.",
+                        tps: [
+                            "Mampu mengidentifikasi komponen kebugaran jasmani (Pertemuan 29)",
+                            "Mampu menjelaskan manfaat kebugaran jasmani bagi kesehatan (Pertemuan 30)",
+                            "Mampu menjelaskan pentingnya aktivitas fisik secara teratur (Pertemuan 31)",
+                            "Mampu membiasakan aktivitas fisik dalam kehidupan sehari-hari (Pertemuan 32)",
+                            "Mampu melakukan pengukuran kebugaran sederhana sesuai usia (Pertemuan 33)"
+                        ]
+                    },
+                    "Memilih Hidup yang Menyehatkan": {
+                        cp: "Mengenal risiko kesehatan akibat gaya hidup tidak sehat, memahami kebutuhan gizi, dan mempraktikkan pertolongan pertama sederhana.",
+                        materi: "Pola hidup sehat, gizi seimbang, pencegahan penyakit, pertolongan pertama pada cedera ringan.",
+                        tps: [
+                            "Mampu menerapkan pola hidup sehat dan memilih makanan bergizi seimbang (Pertemuan 34)",
+                            "Mampu menjelaskan cara mencegah penyakit melalui pola hidup sehat dan aktivitas fisik (Pertemuan 35)",
+                            "Mampu mempraktikkan langkah-langkah pertolongan pertama pada cedera ringan secara sederhana dan aman (Pertemuan 36)"
+                        ]
+                    }
+                }
+            },
+            "Kelas 6": {
+                fase: "Fase C",
+                elemen: {
+                    "Terampil Bergerak": {
+                        cp: "Menyesuaikan dan menerapkan keterampilan gerak serta strategi dalam berbagai situasi permainan dan aktivitas olahraga yang lebih kompleks.",
+                        materi: "Kombinasi teknik dan strategi permainan bola besar, bola kecil, atletik, senam, dan aktivitas kebugaran.",
+                        tps: [
+                            "Mampu menganalisis dan mempraktikkan kombinasi teknik dasar permainan bola besar secara tepat (Pertemuan 1)",
+                            "Mampu menerapkan strategi menyerang dalam permainan bola besar sederhana (Pertemuan 2)",
+                            "Mampu menerapkan strategi bertahan dalam permainan bola besar sederhana (Pertemuan 3)",
+                            "Mampu mengombinasikan teknik dan strategi dalam permainan bola besar (Pertemuan 4)",
+                            "Mampu mengevaluasi efektivitas teknik dan strategi yang digunakan dalam permainan (Pertemuan 5)",
+                            "Mampu mempraktikkan kombinasi teknik dasar permainan bola kecil dengan benar (Pertemuan 6)",
+                            "Mampu menerapkan strategi sederhana dalam permainan bola kecil (Pertemuan 7)",
+                            "Mampu mengombinasikan teknik dan strategi permainan bola kecil (Pertemuan 8)",
+                            "Mampu mengevaluasi hasil permainan berdasarkan strategi yang digunakan (Pertemuan 9)",
+                            "Mampu mempraktikkan teknik lari dengan efisien dan aman (Pertemuan 10)",
+                            "Mampu mempraktikkan teknik lompat sesuai prinsip gerak yang benar (Pertemuan 11)",
+                            "Mampu mempraktikkan teknik lempar dengan koordinasi yang baik (Pertemuan 12)",
+                            "Mampu mengombinasikan berbagai nomor atletik dalam aktivitas pembelajaran (Pertemuan 13)",
+                            "Mampu menganalisis faktor yang memengaruhi keberhasilan aktivitas atletik (Pertemuan 14)",
+                            "Mampu mempraktikkan rangkaian gerak senam lantai dengan teknik yang benar (Pertemuan 15)",
+                            "Mampu menyusun rangkaian gerak senam sederhana secara mandiri (Pertemuan 16)",
+                            "Mampu menampilkan rangkaian senam dengan percaya diri dan aman (Pertemuan 17)",
+                            "Mampu melakukan latihan kebugaran sesuai komponen kebugaran jasmani (Pertemuan 18)",
+                            "Mampu menyusun aktivitas latihan kebugaran sederhana (Pertemuan 19)",
+                            "Mampu mengevaluasi hasil latihan kebugaran yang telah dilakukan (Pertemuan 20)"
+                        ]
+                    },
+                    "Belajar Melalui Gerak": {
+                        cp: "Mengevaluasi strategi permainan, memodifikasi aturan permainan secara sederhana, serta memimpin dan bekerja sama dalam tim secara efektif.",
+                        materi: "Analisis strategi permainan, modifikasi permainan, kepemimpinan, dan fair play.",
+                        tps: [
+                            "Mampu mengidentifikasi strategi yang efektif dalam permainan beregu (Pertemuan 21)",
+                            "Mampu menganalisis kelebihan dan kekurangan strategi permainan (Pertemuan 22)",
+                            "Mampu mengusulkan modifikasi aturan permainan sesuai kondisi peserta (Pertemuan 23)",
+                            "Mampu menerapkan modifikasi permainan untuk meningkatkan partisipasi (Pertemuan 24)",
+                            "Mampu menunjukkan kemampuan memimpin kelompok dalam aktivitas jasmani (Pertemuan 25)",
+                            "Mampu mengambil keputusan yang tepat dalam kegiatan kelompok (Pertemuan 26)",
+                            "Mampu menerapkan prinsip fair play dalam berbagai permainan dan perlombaan (Pertemuan 27)",
+                            "Mampu menjadi teladan perilaku sportif dalam aktivitas jasmani (Pertemuan 28)"
+                        ]
+                    },
+                    "Bergaya Hidup Aktif": {
+                        cp: "Merancang dan melaksanakan aktivitas kebugaran sederhana serta menganalisis hubungannya dengan kesehatan dan kebugaran.",
+                        materi: "Perencanaan program kebugaran sederhana, pengukuran kebugaran, aktivitas fisik untuk kesehatan jangka panjang.",
+                        tps: [
+                            "Mampu menyusun program latihan kebugaran sederhana sesuai kebutuhan diri (Pertemuan 29)",
+                            "Mampu melaksanakan program kebugaran yang telah disusun (Pertemuan 30)",
+                            "Mampu melakukan pengukuran kebugaran jasmani sederhana (Pertemuan 31)",
+                            "Mampu menafsirkan hasil pengukuran kebugaran secara sederhana (Pertemuan 32)",
+                            "Mampu menjelaskan manfaat aktivitas fisik bagi kesehatan sepanjang hayat (Pertemuan 33)"
+                        ]
+                    },
+                    "Memilih Hidup yang Menyehatkan": {
+                        cp: "Menganalisis risiko kesehatan, menerapkan pola hidup sehat dan gizi seimbang, serta melakukan prosedur pertolongan pertama pada cedera ringan secara tepat.",
+                        materi: "Analisis risiko kesehatan remaja, kebutuhan gizi sesuai aktivitas, pencegahan cedera, dan pertolongan pertama.",
+                        tps: [
+                            "Mampu mengidentifikasi berbagai risiko kesehatan pada masa remaja dan cara pencegahannya (Pertemuan 34)",
+                            "Mampu menganalisis kebutuhan gizi sesuai aktivitas fisik serta menerapkan upaya pencegahan cedera (Pertemuan 35)",
+                            "Mampu mempraktikkan prosedur pertolongan pertama pada cedera ringan secara tepat dan aman (Pertemuan 36)"
+                        ]
+                    }
+                }
+            }
+        };
+
+        const kbcPresets = {
+            "Tema 1: Cinta Allah Swt. & Rasul-Nya": "• Menumbuhkan rasa syukur atas anugerah fisik yang sehat dan kemampuan bergerak dengan baik.\n• Meneladani kedisiplinan dan kekuatan fisik para Rasul melalui ketekunan berolahraga.\n• Menjaga amanah kesehatan badan dari Allah Swt.",
+            "Tema 2: Cinta Ilmu": "• Menunjukkan ketekunan, konsentrasi, dan pemahaman ilmiah terhadap prinsip gerakan tubuh yang efisien.\n• Bersungguh-sungguh mempelajari teknik olahraga baru sebagai implementasi pilar cinta ilmu.",
+            "Tema 3: Cinta Lingkungan": "• Membiasakan kepedulian menjaga kebersihan area olahraga baik lapangan, ruang senam, maupun kolam air.\n• Beraktivitas jasmani secara harmoni di alam terbuka serta menjaga kelestarian pepohonan sekitar.",
+            "Tema 4: Cinta Diri & Sesama Manusia": "• Membina empati, kerja sama kelompok, serta sikap tolong-menolong saat latihan maupun permainan.\n• Menghormati perbedaan kemampuan fisik teman dan menghindari sikap merundung (bullying).",
+            "Tema 5: Cinta Tanah Air": "• Memupuk semangat gotong royong, persatuan, dan sportivitas tinggi mencerminkan nilai luhur Pancasila.\n• Melestarikan permainan tradisional asli Nusantara sebagai kekayaan budaya bangsa."
+        };
+
+        // State Global Aplikasi
+        let pemetaanData = [];
+
+        // Initializer Aplikasi
+        window.onload = function() {
+            lucide.createIcons();
+
+            // Load data tersimpan di LocalStorage atau pakai data awal default
+            const localStored = localStorage.getItem('pemetaan_cp_kbc_pjok');
+            if (localStored) {
+                try {
+                    pemetaanData = JSON.parse(localStored);
+                } catch(e) {
+                    loadDefaultInitialRows();
+                }
+            } else {
+                loadDefaultInitialRows();
+            }
+
+            // Inisialisasi dropdown otomatis
+            onDbSelectionChange();
+            renderTable();
+            updateHeader();
+        };
+
+        // Buat data bawaan awal jika memori kosong
+        function loadDefaultInitialRows() {
+            pemetaanData = [
+                {
+                    id: "init-1",
+                    fase: "Fase A / Kelas 1",
+                    elemen: "Terampil Bergerak",
+                    cp: "Mampu mempraktikkan gerak berjalan maju dengan benar (Pertemuan 1)",
+                    materi: "Gerak berjalan, berlari, melompat, meloncat, menekuk, memutar, melempar, menangkap, menendang.",
+                    temaKbc: "Tema 2: Cinta Ilmu",
+                    integrasi: "• Menunjukkan ketekunan, konsentrasi, dan pemahaman ilmiah terhadap prinsip gerakan tubuh yang efisien.\n• Bersungguh-sungguh mempelajari teknik olahraga baru sebagai implementasi pilar cinta ilmu."
+                }
+            ];
+        }
+
+        // Reaksi saat Kelas atau Elemen diganti di dropdown mesin auto-fill
+        function onDbSelectionChange() {
+            const kelas = document.getElementById('dbKelasSelect').value;
+            const elemen = document.getElementById('dbElemenSelect').value;
+            const targetKelas = PJOK_DATABASE[kelas];
+
+            if (targetKelas) {
+                const targetElemen = targetKelas.elemen[elemen];
+                if (targetElemen) {
+                    // Update preview materi secara visual
+                    document.getElementById('dbMateriPreview').innerText = targetElemen.materi;
+
+                    // Update dropdown TP pilihan
+                    const tpSelect = document.getElementById('dbTpSelect');
+                    tpSelect.innerHTML = '';
+                    
+                    targetElemen.tps.forEach((tp, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = tp;
+                        opt.innerText = tp;
+                        tpSelect.appendChild(opt);
+                    });
+                }
+            }
+        }
+
+        // Muat data terpilih dari database ke dalam formulir input manual
+        function loadSingleSelectedTp() {
+            const kelas = document.getElementById('dbKelasSelect').value;
+            const elemen = document.getElementById('dbElemenSelect').value;
+            const selectedTp = document.getElementById('dbTpSelect').value;
+            const targetKelas = PJOK_DATABASE[kelas];
+
+            if (targetKelas) {
+                const targetElemen = targetKelas.elemen[elemen];
+                if (targetElemen) {
+                    document.getElementById('faseInput').value = `${targetKelas.fase} / ${kelas}`;
+                    document.getElementById('elemenInput').value = elemen;
+                    document.getElementById('cpInput').value = selectedTp;
+                    document.getElementById('materiInput').value = targetElemen.materi;
+                    
+                    // Trigger penyesuaian preset KBC
+                    applyPresetKbc('input');
+                    showToast(`Data "${selectedTp.substring(0, 30)}..." berhasil dimuat ke formulir!`, "success");
+                }
+            }
+        }
+
+        // Memasukkan seluruh TP dalam Elemen terpilih sekaligus (Mass/Bulk Load)
+        function addAllTpsFromElement() {
+            const kelas = document.getElementById('dbKelasSelect').value;
+            const elemen = document.getElementById('dbElemenSelect').value;
+            const targetKelas = PJOK_DATABASE[kelas];
+
+            if (targetKelas) {
+                const targetElemen = targetKelas.elemen[elemen];
+                if (targetElemen) {
+                    const themeKbc = document.getElementById('temaKbcSelect').value;
+                    const presetKbc = kbcPresets[themeKbc] || '';
+
+                    openConfirmModal(
+                        "Muat Massal (Bulk-Load)", 
+                        `Apakah Anda yakin ingin memasukkan seluruh ${targetElemen.tps.length} TP dari Elemen "${elemen}" ini secara sekaligus ke dalam tabel?`, 
+                        function() {
+                            targetElemen.tps.forEach(tp => {
+                                const newItem = {
+                                    id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
+                                    fase: `${targetKelas.fase} / ${kelas}`,
+                                    elemen: elemen,
+                                    cp: tp,
+                                    materi: targetElemen.materi,
+                                    temaKbc: themeKbc,
+                                    integrasi: presetKbc
+                                };
+                                pemetaanData.push(newItem);
+                            });
+                            renderTable();
+                            showToast(`Sukses memetakan ${targetElemen.tps.length} TP sekaligus!`, "success");
+                        }
+                    );
+                }
+            }
+        }
+
+        // Trigger perubahan tema KBC secara otomatis di formulir
+        function onKbcThemeChange() {
+            applyPresetKbc('input');
+        }
+
+        // Memasukkan deskripsi preset cinta KBC
+        function applyPresetKbc(type) {
+            if (type === 'input') {
+                const selectedTema = document.getElementById('temaKbcSelect').value;
+                document.getElementById('integrasiInput').value = kbcPresets[selectedTema] || '';
+            } else if (type === 'edit') {
+                const selectedTema = document.getElementById('editTemaKbc').value;
+                document.getElementById('editIntegrasi').value = kbcPresets[selectedTema] || '';
+            }
+        }
+
+        // Mengubah KOP Identitas Sekolah & Cetak
+        function updateHeader() {
+            const school = document.getElementById('schoolName').value;
+            const subject = document.getElementById('subjectName').value;
+            const fase = document.getElementById('faseHeader').value;
+            const year = document.getElementById('schoolYear').value;
+            const teacher = document.getElementById('teacherName').value;
+            const headmaster = document.getElementById('headmasterName').value;
+
+            document.getElementById('printSchool').innerText = school;
+            document.getElementById('printSubject').innerText = subject;
+            document.getElementById('printFase').innerText = fase;
+            document.getElementById('printYear').innerText = year;
+            document.getElementById('printTeacher').innerText = teacher || '-------------------------';
+            document.getElementById('printHeadmaster').innerText = headmaster || '-------------------------';
+
+            // Sinkronkan ke KOP RPPM
+            document.getElementById('rppmKopSekolah').innerText = `Satuan Pendidikan: ${school}`;
+            document.getElementById('rppmPrintTeacher').innerText = teacher || '-------------------------';
+            document.getElementById('rppmPrintHeadmaster').innerText = headmaster || '-------------------------';
+        }
+
+        // Merender Tabel Matriks Pemetaan
+        function renderTable() {
+            const matriksBody = document.getElementById('matriksBody');
+            matriksBody.innerHTML = '';
+
+            if (pemetaanData.length === 0) {
+                matriksBody.innerHTML = `
+                    <tr class="text-sm bg-white no-print">
+                        <td colspan="6" class="border border-slate-200 p-8 text-center text-slate-400 italic">
+                            <i data-lucide="folder-open" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                            Belum ada data pemetaan. Silakan gunakan panel auto-fill di sebelah kiri atau isi secara manual.
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            pemetaanData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = "text-[11px] sm:text-xs bg-white hover:bg-slate-50 transition border-b border-slate-200";
+
+                row.innerHTML = `
+                    <td class="border border-slate-200 p-2.5 text-center font-bold text-slate-700 bg-slate-50/50 print-bg-gray">${item.fase}</td>
+                    <td class="border border-slate-200 p-2.5 font-semibold text-blue-950">${item.elemen}</td>
+                    <td class="border border-slate-200 p-2.5 text-slate-800 leading-relaxed">${item.cp}</td>
+                    <td class="border border-slate-200 p-2.5 text-slate-600 leading-relaxed">${item.materi}</td>
+                    <td class="border border-slate-200 p-2.5 print-bg-theme">
+                        <div class="bg-blue-50 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded border-l-4 border-blue-600 mb-1.5 max-w-max uppercase tracking-wider">${item.temaKbc}</div>
+                        <div class="text-[10px] text-slate-600 leading-relaxed whitespace-pre-line">${item.integrasi}</div>
+                    </td>
+                    <td class="border border-slate-200 p-2.5 text-center no-print">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="extractToRppm('${item.id}')" title="Ekstrak ke RPPM Mendalam" class="p-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition cursor-pointer">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="editRow('${item.id}')" title="Edit Baris" class="p-1 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 rounded-lg transition cursor-pointer">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="duplicateRow('${item.id}')" title="Duplikasi" class="p-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg transition cursor-pointer">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="openDeleteConfirmation('${item.id}')" title="Hapus Baris" class="p-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer">
+                                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                matriksBody.appendChild(row);
+            });
+
+            lucide.createIcons();
+            saveToLocalStorage();
+        }
+
+        // Simpan Form Konten Manual ke Tabel
+        document.getElementById('cpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const fase = document.getElementById('faseInput').value;
+            const elemen = document.getElementById('elemenInput').value;
+            const cp = document.getElementById('cpInput').value;
+            const materi = document.getElementById('materiInput').value;
+            const temaKbc = document.getElementById('temaKbcSelect').value;
+            const integrasi = document.getElementById('integrasiInput').value;
+
+            const newItem = {
+                id: Date.now().toString(),
+                fase,
+                elemen,
+                cp,
+                materi,
+                temaKbc,
+                integrasi
+            };
+
+            pemetaanData.push(newItem);
+            renderTable();
+
+            // Reset isian teks agar siap entri berikutnya
+            document.getElementById('cpInput').value = '';
+            showToast("Sukses menambahkan baris pemetaan baru!", "success");
+        });
+
+        // Simpan State Ke LocalStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('pemetaan_cp_kbc_pjok', JSON.stringify(pemetaanData));
+        }
+
+        // Duplikasi Baris data
+        function duplicateRow(id) {
+            const target = pemetaanData.find(item => item.id === id);
+            if (target) {
+                const duplicated = {
+                    ...target,
+                    id: Date.now().toString() + Math.random().toString(36).substring(2, 5)
+                };
+                pemetaanData.push(duplicated);
+                renderTable();
+                showToast("Baris berhasil diduplikasi!", "success");
+            }
+        }
+
+        // Hapus Baris Terpilih
+        let rowToDeleteId = null;
+        function openDeleteConfirmation(id) {
+            rowToDeleteId = id;
+            openConfirmModal("Hapus Data", "Apakah Anda yakin ingin menghapus baris data pemetaan ini?", function() {
+                pemetaanData = pemetaanData.filter(item => item.id !== rowToDeleteId);
+                renderTable();
+                showToast("Baris data berhasil dihapus.", "info");
+            });
+        }
+
+        // Membuka modal edit baris
+        function editRow(id) {
+            const target = pemetaanData.find(item => item.id === id);
+            if (target) {
+                document.getElementById('editRowId').value = target.id;
+                document.getElementById('editFase').value = target.fase;
+                document.getElementById('editElemen').value = target.elemen;
+                document.getElementById('editCp').value = target.cp;
+                document.getElementById('editMateri').value = target.materi;
+                document.getElementById('editTemaKbc').value = target.temaKbc;
+                document.getElementById('editIntegrasi').value = target.integrasi;
+
+                document.getElementById('editModal').classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // Submit Form Perubahan/Edit
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editRowId').value;
+            const index = pemetaanData.findIndex(item => item.id === id);
+
+            if (index !== -1) {
+                pemetaanData[index] = {
+                    id,
+                    fase: document.getElementById('editFase').value,
+                    elemen: document.getElementById('editElemen').value,
+                    cp: document.getElementById('editCp').value,
+                    materi: document.getElementById('editMateri').value,
+                    temaKbc: document.getElementById('editTemaKbc').value,
+                    integrasi: document.getElementById('editIntegrasi').value
+                };
+                renderTable();
+                closeEditModal();
+                showToast("Perubahan berhasil disimpan ke tabel!", "success");
+            }
+        });
+
+        // ============================================
+        // MESIN GENERATOR RPPM BERBASIS KBC OTOMATIS
+        // ============================================
+        function extractToRppm(id) {
+            const item = pemetaanData.find(d => d.id === id);
+            if (!item) {
+                showToast("Data tidak ditemukan!", "error");
+                return;
+            }
+
+            // 1. Sinkronisasi Identitas Utama
+            const school = document.getElementById('schoolName').value;
+            const mapel = document.getElementById('subjectName').value;
+            
+            document.getElementById('rppmSatuan').innerText = school;
+            document.getElementById('rppmMapel').innerText = mapel;
+            document.getElementById('rppmFase').innerText = item.fase;
+            document.getElementById('rppmMateri').innerText = item.materi.substring(0, 100) + (item.materi.length > 100 ? '...' : '');
+            document.getElementById('rppmTujuan').innerText = item.cp;
+            document.getElementById('rppmKbcTema').innerText = item.temaKbc;
+
+            // Alokasi Waktu Otomatis sesuai Fase
+            let alokasi = "2 x 35 Menit (1 Pertemuan)";
+            if (item.fase.includes("Fase B") || item.fase.includes("Fase C")) {
+                alokasi = "3 x 35 Menit (1 Pertemuan)";
+            }
+            document.getElementById('rppmAlokasi').innerText = alokasi;
+
+            // 2. Turunan Indikator Ketercapaian (IKTP) Otomatis
+            const iktpList = document.getElementById('rppmIktp');
+            iktpList.innerHTML = '';
+            
+            const iktp1 = document.createElement('li');
+            iktp1.innerText = `Menunjukkan sikap bersyukur, santun, dan saling menghormati antarteman sebagai wujud integrasi ${item.temaKbc}.`;
+            const iktp2 = document.createElement('li');
+            iktp2.innerText = `Memahami konsep teoretis dan prosedur pelaksanaan dari materi pokok: ${item.materi.split(',')[0] || item.materi}.`;
+            const iktp3 = document.createElement('li');
+            iktp3.innerText = `Mempraktikkan secara aktif, aman, dan kolaboratif target kompetensi: "${item.cp.replace(/Peserta didik mampu /g, '')}".`;
+            
+            iktpList.appendChild(iktp1);
+            iktpList.appendChild(iktp2);
+            iktpList.appendChild(iktp3);
+
+            // 3. Rekomendasi Metode Pembelajaran Secara Otomatis
+            let metode = "Demonstrasi Aktif & Resiprokal (Timbal-Balik)";
+            if (item.elemen.includes("Terampil Bergerak")) {
+                metode = "Teaching Games for Understanding (TGfU) & Drill Terbimbing";
+            } else if (item.elemen.includes("Belajar Melalui Gerak")) {
+                metode = "Cooperative Learning (Saintifik Kelompok Berpasangan)";
+            } else if (item.elemen.includes("Bergaya Hidup Aktif")) {
+                metode = "Inkuiri Terbimbing & Sirkuit Kebugaran Ceria";
+            } else if (item.elemen.includes("Menyehatkan") || item.elemen.includes("Memilih Hidup")) {
+                metode = "Problem-Based Learning (PBL) & Diskusi Kasus Gizi Aktif";
+            }
+            document.getElementById('rppmMetode').innerText = metode;
+
+            // 4. Konstruksi Skenario Alur Pembelajaran Berbasis Cinta
+            const pendahuluanUl = document.getElementById('rppmPendahuluan');
+            const intiUl = document.getElementById('rppmInti');
+            const penutupUl = document.getElementById('rppmPenutup');
+
+            pendahuluanUl.innerHTML = '';
+            intiUl.innerHTML = '';
+            penutupUl.innerHTML = '';
+
+            // --- A. PENDAHULUAN ---
+            const pendSteps = [
+                "Guru membuka pembelajaran dengan mengucapkan salam hangat penuh kasih sayang, dilanjutkan dengan berdoa bersama dipimpin salah satu peserta didik.",
+                `Guru melakukan refleksi pembuka (Pilar KBC): Mengajak peserta didik memejamkan mata sejenak, mensyukuri nikmat organ tubuh dan napas sehat yang diberikan Tuhan.`,
+                "Melakukan presensi kelas yang unik dengan meminta peserta didik menyebutkan satu kata positif hari ini sebagai penyemangat.",
+                "Pemanasan dinamis dikemas dalam bentuk permainan ceria (misal: 'Sentuhan Kasih/Hijau-Hitam') untuk meningkatkan denyut nadi sekaligus membangun kegembiraan motorik."
+            ];
+            pendSteps.forEach(s => {
+                const li = document.createElement('li');
+                li.innerText = s;
+                pendahuluanUl.appendChild(li);
+            });
+
+            // --- B. INTI (Disesuaikan dengan Metode Pembelajaran Terpilih) ---
+            let intiSteps = [];
+            if (metode.includes("TGfU")) {
+                intiSteps = [
+                    "Game Play 1: Peserta didik dibagi dalam kelompok kecil untuk memainkan skenario gerak dasar yang dimodifikasi tanpa aturan rumit.",
+                    "Tactical Awareness (Tanya-Jawab Cinta): Guru mengumpulkan peserta didik membentuk lingkaran kecil untuk merenungi tantangan gerak. Guru memotivasi dengan cinta agar peserta didik menemukan celah taktis terbaik.",
+                    "Demonstrasi Terbimbing: Guru dan model peserta didik mendemonstrasikan postur tubuh yang efisien dalam melakukan gerak dasar.",
+                    "Drill Practice (Berpasangan): Peserta didik mempraktikkan gerakan secara berulang dengan pengawasan rekannya yang berperan sebagai 'pelatih cinta' (saling memberikan koreksi dengan bahasa yang santun).",
+                    "Game Play 2: Penerapan kembali teknik gerak dasar dalam permainan tim kelompok kecil dengan penguatan nilai kerja sama luhur."
+                ];
+            } else if (metode.includes("Cooperative")) {
+                intiSteps = [
+                    "Formasi Cinta Kasih: Peserta didik dikelompokkan secara heterogen (tanpa membeda-bedakan kemampuan fisik atau latar belakang).",
+                    "Pemberian Tugas: Setiap kelompok mendapatkan kartu tugas berisi aturan kolaborasi dalam mempraktikkan gerak dasar pembelajaran.",
+                    "Eksplorasi Bersama: Anggota tim bekerja sama mengeksplorasi gerakan. Anak yang memiliki kemampuan lebih membimbing temannya yang membutuhkan bantuan (tutor sebaya berbasis empati).",
+                    "Presentasi Kelompok: Setiap kelompok menunjukkan hasil kerja sama gerak mereka di depan kelompok lain dengan penuh percaya diri.",
+                    "Refleksi Antar-Kelompok: Kelompok lain memberikan apresiasi tepuk tangan dan masukan konstruktif yang positif."
+                ];
+            } else if (metode.includes("Inkuiri") || metode.includes("Sirkuit")) {
+                intiSteps = [
+                    "Penjelajahan Pos Mandiri: Guru menyiapkan 3-4 pos sirkuit latihan kebugaran yang menantang namun aman.",
+                    "Penyelidikan Mandiri: Peserta didik secara berkelompok mencoba memecahkan rintangan fisik di setiap pos pos dengan batasan waktu.",
+                    "Analisis Kebugaran: Guru memandu peserta didik merasakan perbedaan denyut jantung dan napas sebelum serta sesudah sirkuit.",
+                    "Diskusi Kelompok: Menemukan kesimpulan mandiri mengenai pentingnya intensitas gerak bagi ketahanan fisik tubuh.",
+                    "Penguatan Guru: Memberikan konsep ilmiah kebugaran secara menyenangkan dengan gaya mendidik penuh apresiasi."
+                ];
+            } else { // Problem Based Learning
+                intiSteps = [
+                    "Orientasi Masalah: Guru menampilkan cerita atau ilustrasi gambar bertema gaya hidup tidak sehat (misal: malas mencuci tangan atau jajan sembarangan).",
+                    "Organisasi Belajar: Peserta didik berdiskusi dalam kelompok kecil untuk menganalisis risiko kesehatan akibat perilaku tersebut.",
+                    "Penyelidikan Mandiri: Setiap kelompok mencari solusi praktis dan langkah pertolongan pertama sederhana.",
+                    "Pengembangan Karya: Peserta didik mensimulasikan langkah aksi hidup bersih sehat secara bergantian.",
+                    "Analisis & Evaluasi: Guru memberikan klarifikasi, ulasan komprehensif, dan hadiah pujian atas keberhasilan simulasi."
+                ];
+            }
+            intiSteps.forEach(s => {
+                const li = document.createElement('li');
+                li.innerText = s;
+                intiUl.appendChild(li);
+            });
+
+            // --- C. PENUTUP ---
+            const penutSteps = [
+                "Melakukan pendinginan fisik (*cooling down*) secara perlahan diiringi musik lembut atau teknik pernapasan dalam (*deep breathing*).",
+                `Refleksi Nilai KBC: Guru memandu refleksi mental: "${item.integrasi.replace(/• /g, '')}"`,
+                "Apresiasi Bintang Kelas: Guru memberikan pujian khusus kepada anak yang menunjukkan integritas sosial, kejujuran, dan sportivitas tinggi selama olahraga hari ini.",
+                "Menugaskan merawat kebersihan pakaian dan tubuh di rumah masing-masing, ditutup dengan doa bersama penuh khidmat dan jabat tangan persaudaraan."
+            ];
+            penutSteps.forEach(s => {
+                const li = document.createElement('li');
+                li.innerText = s;
+                penutupUl.appendChild(li);
+            });
+
+            // 5. Deskripsi Asesmen dan Evaluasi
+            let asFormatif = "• Rubrik Penilaian Kinerja (Skala 1-4) mengamati ketepatan koordinasi anggota tubuh saat mempraktikkan gerakan dasar utama secara aktif.";
+            let asSumatif = "• Tes Tulis Esai Singkat / Tes Lisan menanyakan 2-3 pertanyaan kunci mengenai manfaat melakukan gerakan dasar secara aman.";
+            let asSikap = `• Lembar Observasi Karakter KBC mengukur pilar keterkaitan: perilaku adil, sabar mengantre giliran, empati membantu teman, dan kedisiplinan selama pembelajaran.`;
+
+            if (item.elemen.includes("Menyehatkan") || item.elemen.includes("Memilih Hidup")) {
+                asFormatif = "• Lembar Unjuk Kerja / Simulasi langkah pertolongan pertama serta perilaku hidup bersih sehat.";
+                asSumatif = "• Tes Pilihan Ganda / Menjodohkan gambar bertema pilihan makanan gizi seimbang.";
+            }
+
+            document.getElementById('rppmAsesmenFormatif').innerText = asFormatif;
+            document.getElementById('rppmAsesmenSumatif').innerText = asSumatif;
+            document.getElementById('rppmAsesmenSikap').innerText = asSikap;
+
+            // Buka Modal Dialog RPPM
+            const modal = document.getElementById('rppmModal');
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeRppmModal() {
+            document.getElementById('rppmModal').classList.add('hidden');
+        }
+
+        // Cetak Khusus Halaman RPPM
+        function printRppm() {
+            document.body.classList.add('printing-rppm');
+            window.print();
+            // Setelah jendela cetak ditutup, kembalikan class body
+            setTimeout(() => {
+                document.body.classList.remove('printing-rppm');
+            }, 1000);
+        }
+
+        function printMatriks() {
+            document.body.classList.add('printing-matriks');
+            window.print();
+            setTimeout(() => {
+                document.body.classList.remove('printing-matriks');
+            }, 1000);
+        }
+
+        // --- AKSI ADMINISTRASI DAN EKSPOR UTAMA ---
+        // Kosongkan Seluruh isi tabel pratinjau
+        function openClearConfirmation() {
+            openConfirmModal("Kosongkan Seluruh Tabel", "Apakah Anda sepenuhnya yakin ingin mengosongkan seluruh baris pada matriks pratinjau? Ini menghapus seluruh rancangan sementara Anda.", function() {
+                pemetaanData = [];
+                renderTable();
+                showToast("Seluruh tabel dikosongkan.", "info");
+            });
+        }
+
+        // Ekspor ke format CSV Excel
+        function exportToCSV() {
+            if (pemetaanData.length === 0) {
+                showToast("Tidak ada data untuk diekspor!", "warning");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Fase/Kelas,Elemen,Tujuan Pembelajaran (TP) / CP,Materi Pokok,Tema KBC,Keterkaitan Integrasi KBC\n";
+
+            pemetaanData.forEach(item => {
+                const cleanFase = `"${item.fase.replace(/"/g, '""')}"`;
+                const cleanElemen = `"${item.elemen.replace(/"/g, '""')}"`;
+                const cleanCp = `"${item.cp.replace(/"/g, '""')}"`;
+                const cleanMateri = `"${item.materi.replace(/"/g, '""')}"`;
+                const cleanTema = `"${item.temaKbc.replace(/"/g, '""')}"`;
+                const cleanIntegrasi = `"${item.integrasi.replace(/"/g, '""')}"`;
+
+                csvContent += `${cleanFase},${cleanElemen},${cleanCp},${cleanMateri},${cleanTema},${cleanIntegrasi}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Pemetaan_CP_KBC_PJOK_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Sukses mengekspor ke format CSV!", "success");
+        }
+
+        // Ekspor Cadangan Projek ke JSON
+        function exportJSON() {
+            if (pemetaanData.length === 0) {
+                showToast("Tidak ada proyek untuk dicadangkan!", "warning");
+                return;
+            }
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pemetaanData));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Proyek_PJOK_Pemetaan_KBC_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Proyek berhasil dicadangkan ke berkas JSON!", "success");
+        }
+
+        // Muat File Impor Cadangan
+        function triggerImport() {
+            document.getElementById('importFile').click();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        pemetaanData = imported;
+                        renderTable();
+                        showToast("Proyek pemetaan berhasil dimuat ulang!", "success");
+                    } else {
+                        showToast("Struktur data cadangan salah!", "error");
+                    }
+                } catch(err) {
+                    showToast("Gagal mengurai file JSON!", "error");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // --- CUSTOM TOAST & DIALOG BOX UTILITY ---
+        let onConfirmAction = null;
+        function openConfirmModal(title, msg, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = msg;
+            onConfirmAction = onConfirm;
+
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden');
+            document.getElementById('confirmBox').classList.remove('scale-95');
+            document.getElementById('confirmBox').classList.add('scale-100');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmBox').classList.remove('scale-100');
+            document.getElementById('confirmBox').classList.add('scale-95');
+            modal.classList.add('hidden');
+        }
+
+        document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmModal);
+        document.getElementById('confirmActionBtn').addEventListener('click', function() {
+            if (onConfirmAction) onConfirmAction();
+            closeConfirmModal();
+        });
+
+        function showToast(message, type = "info") {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-slate-800 text-white border-slate-700";
+            let icon = "info";
+
+            if (type === "success") {
+                bgClass = "bg-emerald-50 text-emerald-800 border-emerald-200";
+                icon = "check-circle";
+            } else if (type === "error") {
+                bgClass = "bg-rose-50 text-rose-800 border-rose-200";
+                icon = "x-circle";
+            } else if (type === "warning") {
+                bgClass = "bg-amber-50 text-amber-800 border-amber-200";
+                icon = "alert-circle";
+            }
+
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl border shadow-lg text-xs sm:text-sm transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i>
+                <span class="font-semibold">${message}</span>
+            `;
+
+            toastContainer.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
